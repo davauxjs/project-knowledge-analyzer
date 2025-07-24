@@ -1,0 +1,31 @@
+{
+  "name": "@davaux/pka",
+  "version": "0.9.0",
+  "description": "\"A powerful Node.js command-line tool that analyzes your project structure, flattens complex folder hierarchies, and generates comprehensive documentation specifically designed to maximize Claude AI's understanding of your codebase.\"",
+  "main": "index.js",
+  "type": "module",
+  "bin": {
+    "davaux-pka": "index.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/davauxjs/project-knowledge-analyzer.git"
+  },
+  "keywords": [
+    "claude",
+    "project",
+    "knowledge",
+    "generator",
+    "analyzer",
+    "ai"
+  ],
+  "author": "David L. Dyess II & Claude",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/davauxjs/project-knowledge-analyzer/issues"
+  },
+  "homepage": "https://github.com/davauxjs/project-knowledge-analyzer#readme"
+}
