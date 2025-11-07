@@ -47,6 +47,8 @@ class ProjectAnalyzer {
         ".env.example",
         ".gitignore",
         ".npmignore",
+        ".sql",
+        ".surql",
       ],
       outputDir: options.outputDir || "./project-knowledge",
     };

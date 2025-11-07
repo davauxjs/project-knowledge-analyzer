@@ -1,6 +1,6 @@
 {
   "name": "@davaux/pka",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "\"A powerful Node.js command-line tool that analyzes your project structure, flattens complex folder hierarchies, and generates comprehensive documentation specifically designed to maximize Claude AI's understanding of your codebase.\"",
   "main": "index.js",
   "type": "module",

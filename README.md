@@ -4,9 +4,19 @@
 
 A powerful Node.js command-line tool that analyzes your project structure, flattens complex folder hierarchies, and generates comprehensive documentation specifically designed to maximize Claude AI's understanding of your codebase.
 
-![npm version](https://img.shields.io/npm/v/project-knowledge-analyzer)
+![npm version](https://img.shields.io/npm/v/@davaux/pka)
 ![license](https://img.shields.io/github/license/davauxjs/project-knowledge-analyzer)
-![downloads](https://img.shields.io/npm/dm/project-knowledge-analyzer)
+![downloads](https://img.shields.io/npm/dm/@davaux/pka)
+
+### Change Log
+
+#### 0.9.1
+
+- Added `.sql` and `.surql` to allowed file types
+
+#### 0.9.0
+
+- Initial release
 
 ## 🚀 Why Use This Tool?
 
@@ -62,14 +72,17 @@ npm install @davaux/pka
 
 ### Direct Usage (No Installation)
 ```bash
-npx davaux-pka
+npx davaux-pka .
 ```
 
 ## 📖 Usage
 
 ### Basic Usage
 ```bash
-# Analyze current directory
+# Analyze current directory (global install)
+davaux-pka .
+
+# Analyze current directory (local install)
 npx davaux-pka .
 
 # Analyze specific project
