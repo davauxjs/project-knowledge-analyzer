@@ -13,6 +13,7 @@ A powerful Node.js command-line tool that analyzes your project structure, flatt
 ## Table of Contents
 
 - [Change Log](#change-log)
+  - [1.0.1](#101)
   - [1.0.0](#100)
   - [0.9.1](#091)
   - [0.9.0](#090)
@@ -79,6 +80,11 @@ A powerful Node.js command-line tool that analyzes your project structure, flatt
 ---
 
 ### Change Log
+
+#### 1.0.1
+
+- **New**: `init` command — generates a `pka.config.json` in the target directory with every available setting pre-filled at its runtime default. Pass any analysis flag to have it reflected in the generated file (e.g. `davaux-pka init --mode claude-code --compact`). If a config already exists at the current `configVersion`, the command is a no-op unless `--force` is also passed.
+- **New**: Config versioning — generated `pka.config.json` files now include a `configVersion` field. Future releases use this to detect and migrate older configs, adding new settings without touching existing customizations.
 
 #### 1.0.0
 
@@ -372,6 +378,24 @@ npx davaux-pka --help
 
 Place a `pka.config.json` in your project root to persist options — no need to pass flags every time. CLI flags always override config file values.
 
+**Generating a config file:**
+
+Use the `init` command to generate a `pka.config.json` pre-filled with every available setting at its runtime default:
+
+```bash
+# Generate with defaults (flatten mode)
+davaux-pka init
+
+# Generate with your preferred settings pre-applied
+davaux-pka init --mode claude-code --compact
+davaux-pka init --mode multi-tool --output-dir ./.pka
+
+# Re-generate (overwrite an existing config)
+davaux-pka init --force
+```
+
+Every available setting is written to the file — including ones you didn't pass — so you can see the full option surface and edit from a known baseline. Values you provide via flags are written as-is; everything else reflects the default that pka would use if you ran the analysis right now.
+
 **Minimal examples by mode:**
 
 ```json
@@ -394,6 +418,7 @@ Place a `pka.config.json` in your project root to persist options — no need to
 
 ```json
 {
+  "configVersion": 1,
   "mode": "flatten",
   "outputDir": "./project-knowledge",
   "maxFileSize": 1048576,
@@ -414,9 +439,9 @@ Place a `pka.config.json` in your project root to persist options — no need to
   "install": false,
   "xml": false,
 
-  "agentsMd": false,
-  "copilot": false,
-  "cursorRules": false,
+  "agentsMd": null,
+  "copilot": null,
+  "cursorRules": null,
   "hierarchical": false,
   "scaffoldCommands": false,
 
@@ -427,6 +452,19 @@ Place a `pka.config.json` in your project root to persist options — no need to
   "compactPreview": false
 }
 ```
+
+**Key field notes:**
+
+| Field | Notes |
+| --- | --- |
+| `configVersion` | Written by `init`; used to detect when a config is older than the current release and may need migration. Do not remove it. |
+| `agentsMd` / `copilot` / `cursorRules` | `null` = follow mode default (on in `multi-tool`/`full`, off in `claude-code`). Set `false` to always exclude; `true` to always include regardless of mode. |
+| `compactTokens` | `0` means not set — compact mode uses the default 8,192 token budget when `compact: true`. Set a number to override. |
+| `instructions` | Inline developer notes appended to `CLAUDE.md` as a `## Developer Notes` section. `PKA_INSTRUCTIONS.md` at the project root takes precedence over this field. |
+
+**Config versioning and migration:**
+
+`davaux-pka init` stamps a `configVersion` into every generated config. When a new version of pka introduces new settings, running `init` on a project that already has a config will detect the older `configVersion` and add the new settings with their defaults — your existing values are preserved. If the config is already at the current version, `init` is a no-op (use `--force` to regenerate from scratch).
 
 Set an agent file to `false` to exclude it from `multi-tool`/`full` mode even when those modes are active:
 

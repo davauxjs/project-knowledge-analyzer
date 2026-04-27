@@ -58,6 +58,8 @@ const DEFAULT_INCLUDE_EXTENSIONS = [
 
 const ANNOTATION_TAGS = ["TODO", "FIXME", "HACK", "NOTE", "XXX", "BUG", "OPTIMIZE"];
 
+const CONFIG_VERSION = 1;
+
 // Sections dropped first when --compact-omit is active (index 0 = highest priority to drop)
 const COMPACT_OMIT_PRIORITY = [
   "annotations", "orphans", "git-history", "dependencies", "symbols",
@@ -2363,6 +2365,132 @@ async function loadConfig(projectPath) {
   }
 }
 
+// ─── Init Command ─────────────────────────────────────────────────────────────
+
+async function initCommand(args) {
+  let projectPath = ".";
+  let argStart = 0;
+  if (args.length > 0 && !args[0].startsWith("--")) {
+    projectPath = args[0];
+    argStart = 1;
+  }
+
+  const configPath = path.join(path.resolve(projectPath), "pka.config.json");
+
+  // Parse flags — same surface as main CLI so the generated config reflects a real invocation
+  const opts = {};
+  let extraExts = [];
+  let extraExclusions = [];
+
+  for (let i = argStart; i < args.length; i++) {
+    const flag = args[i];
+    const value = args[i + 1];
+
+    switch (flag) {
+      case "--output-dir": opts.outputDir = value; i++; break;
+      case "--max-file-size": opts.maxFileSize = parseInt(value); i++; break;
+      case "--include-ext": extraExts = [...extraExts, ...value.split(",").map((e) => e.trim())]; i++; break;
+      case "--exclude-dir": extraExclusions = [...extraExclusions, ...value.split(",").map((d) => d.trim())]; i++; break;
+      case "--no-git": opts.noGit = true; break;
+      case "--no-flatten": opts.noFlatten = true; break;
+      case "--no-concat": opts.noConcat = true; break;
+      case "--no-context": opts.noContext = true; break;
+      case "--diff": opts.diff = true; break;
+      case "--install": opts.install = true; break;
+      case "--no-gitignore": opts.noGitignore = true; break;
+      case "--force": opts.force = true; break;
+      case "--mode": opts.mode = value; i++; break;
+      case "--claude-code": case "--cc": opts.mode = "claude-code"; break;
+      case "--compact": opts.compact = true; break;
+      case "--compact-tokens": opts.compactTokens = parseInt(value); i++; break;
+      case "--compact-omit": opts.compactOmit = true; break;
+      case "--compact-keep": opts.compactKeep = value.split(",").map((s) => s.trim()); i++; break;
+      case "--compact-preview": opts.compactPreview = true; opts.compact = true; break;
+      case "--hierarchical": opts.hierarchical = true; break;
+      case "--scaffold-commands": opts.scaffoldCommands = true; break;
+      case "--xml": opts.xml = true; break;
+      case "--watch": opts.watch = true; break;
+      case "--since": opts.since = value; i++; break;
+      case "--agents-md": opts.agentsMd = true; break;
+      case "--copilot": opts.copilot = true; break;
+      case "--cursor-rules": opts.cursorRules = true; break;
+      case "--multi-tool": opts.mode = "multi-tool"; break;
+    }
+  }
+
+  // Check for an existing config — migrate or guard
+  let existing = null;
+  try {
+    const raw = await fs.readFile(configPath, "utf8");
+    existing = JSON.parse(raw);
+  } catch {}
+
+  if (existing !== null) {
+    const existingVersion = existing.configVersion || 0;
+
+    // Future migration hook: add new settings introduced after existingVersion
+    // (nothing to migrate yet; existingVersion < CONFIG_VERSION means an older schema)
+
+    if (existingVersion >= CONFIG_VERSION && !opts.force) {
+      console.log(`ℹ️  pka.config.json already exists (configVersion: ${existingVersion}). Use --force to regenerate.`);
+      return;
+    }
+  }
+
+  // Build a complete config reflecting every available setting.
+  // Values come from flags; everything else shows its runtime default so users
+  // see the full option surface and can edit from a known baseline.
+  const config = {
+    configVersion: CONFIG_VERSION,
+    _pkaGenerated: true,
+    // ── Mode ─────────────────────────────────────────────────────────────────
+    // "flatten" | "claude-code" | "multi-tool" | "full"
+    mode: opts.mode ?? "flatten",
+    // ── Output ───────────────────────────────────────────────────────────────
+    outputDir: opts.outputDir ?? "./project-knowledge",
+    maxFileSize: opts.maxFileSize ?? 1048576,
+    // ── Git ──────────────────────────────────────────────────────────────────
+    noGit: opts.noGit ?? false,
+    // ── Context generation ───────────────────────────────────────────────────
+    noContext: opts.noContext ?? false,
+    // ── Flatten / full mode ──────────────────────────────────────────────────
+    noConcat: opts.noConcat ?? false,
+    noFlatten: opts.noFlatten ?? false,
+    install: opts.install ?? false,
+    noGitignore: opts.noGitignore ?? false,
+    xml: opts.xml ?? false,
+    // ── Agent mode (claude-code, multi-tool, full) ────────────────────────────
+    // null = follow mode default; true/false = explicit override
+    agentsMd: opts.agentsMd ?? null,
+    copilot: opts.copilot ?? null,
+    cursorRules: opts.cursorRules ?? null,
+    hierarchical: opts.hierarchical ?? false,
+    scaffoldCommands: opts.scaffoldCommands ?? false,
+    // ── Compact mode ─────────────────────────────────────────────────────────
+    compact: opts.compact ?? false,
+    compactTokens: opts.compactTokens ?? 0,
+    compactOmit: opts.compactOmit ?? false,
+    compactKeep: opts.compactKeep ?? [],
+    compactPreview: opts.compactPreview ?? false,
+    // ── Misc ─────────────────────────────────────────────────────────────────
+    diff: opts.diff ?? false,
+    force: opts.force ?? false,
+    watch: opts.watch ?? false,
+    since: opts.since ?? null,
+    // ── Extensions / exclusions ───────────────────────────────────────────────
+    includeExt: extraExts,
+    excludeDir: extraExclusions,
+    // ── Developer notes (appended verbatim to CLAUDE.md) ─────────────────────
+    instructions: "",
+  };
+
+  await fs.writeFile(configPath, JSON.stringify(config, null, 2) + "\n", "utf8");
+
+  const action = existing !== null ? "Regenerated" : "Generated";
+  console.log(`✅ ${action} pka.config.json (configVersion: ${CONFIG_VERSION})`);
+  console.log(`   Edit it to customize your settings — CLI flags always override config values.`);
+}
+
 // ─── Config Validation ───────────────────────────────────────────────────────
 
 function warnConfigConflicts(options) {
@@ -2419,11 +2547,25 @@ function warnConfigConflicts(options) {
 async function main() {
   const args = process.argv.slice(2);
 
+  if (args[0] === "init") {
+    await initCommand(args.slice(1));
+    return;
+  }
+
   if (args.includes("--help") || args.includes("-h")) {
     console.log(`
 Project Knowledge Analyzer — generate AI context files for any project
 
 Usage: node index.js <project-path> [options]
+       node index.js init [project-path] [options]   # generate pka.config.json
+
+Commands:
+  init [project-path]         Generate a pka.config.json in the target directory.
+                              All analysis flags are accepted; the values you pass
+                              are written into the config so the file reflects a
+                              real invocation rather than placeholder defaults.
+                              If a config already exists at the same configVersion,
+                              the command is a no-op unless --force is also passed.
 
 Modes (mutually exclusive; default: flatten):
   --mode <mode>               Set operation mode explicitly
@@ -2468,9 +2610,12 @@ Compact mode (applicable when CLAUDE.md is generated):
   --help, -h                  Show this help message
 
 Config file (pka.config.json):
+  Generate with:  node index.js init [options]
   { "mode": "multi-tool", "copilot": false }
   Set agent tool to false to exclude it from multi-tool/full: { "copilot": false }
   CLI flags override config file values.
+  The "configVersion" field enables future migrations — new settings added in
+  later releases will be appended when you re-run "init" on an existing config.
 
 Examples:
   node index.js ./my-project
