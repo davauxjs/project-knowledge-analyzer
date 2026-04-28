@@ -58,7 +58,7 @@ const DEFAULT_INCLUDE_EXTENSIONS = [
 
 const ANNOTATION_TAGS = ["TODO", "FIXME", "HACK", "NOTE", "XXX", "BUG", "OPTIMIZE"];
 
-const CONFIG_VERSION = 1;
+const CONFIG_VERSION = 2;
 
 // Sections dropped first when --compact-omit is active (index 0 = highest priority to drop)
 const COMPACT_OMIT_PRIORITY = [
@@ -146,6 +146,7 @@ class ProjectAnalyzer {
     this.orphanFiles = [];
     this.sinceFiles = [];
     this.instructions = "";
+    this.configDescription = "";
     this._docs = null;
     this.stats = {
       totalFiles: 0,
@@ -547,6 +548,7 @@ class ProjectAnalyzer {
     try {
       const cfg = JSON.parse(await fs.readFile(path.join(projectPath, "pka.config.json"), "utf8"));
       if (cfg.instructions) this.instructions = cfg.instructions;
+      if (cfg.description) this.configDescription = cfg.description;
     } catch {}
   }
 
@@ -682,6 +684,8 @@ class ProjectAnalyzer {
     const stack = {
       language: [],
       frameworks: [],
+      state: [],
+      auth: [],
       testing: [],
       build: [],
       styling: [],
@@ -716,36 +720,81 @@ class ProjectAnalyzer {
       };
 
       check({
+        // UI frameworks
         react: "React", vue: "Vue.js", "@angular/core": "Angular",
         svelte: "Svelte", "@sveltejs/kit": "SvelteKit",
         next: "Next.js", nuxt: "Nuxt.js", gatsby: "Gatsby",
         "@remix-run/react": "Remix", astro: "Astro",
         "solid-js": "SolidJS", preact: "Preact", qwik: "Qwik",
+        alpinejs: "Alpine.js", "htmx.org": "HTMX",
+        lit: "Lit", "@lit/reactive-element": "Lit",
+        "@ionic/react": "Ionic", "@ionic/angular": "Ionic", "@ionic/vue": "Ionic",
+        // Backend frameworks
         express: "Express.js", fastify: "Fastify", "@nestjs/core": "NestJS",
         koa: "Koa", hono: "Hono", elysia: "Elysia",
+        "@hapi/hapi": "Hapi.js", "@feathersjs/feathers": "Feathers.js", sails: "Sails.js",
+        "@trpc/server": "tRPC", "@trpc/client": "tRPC",
+        "socket.io": "Socket.io", "socket.io-client": "Socket.io",
+        // Desktop / mobile
         electron: "Electron", "@tauri-apps/api": "Tauri",
         expo: "Expo", "react-native": "React Native",
       }, stack.frameworks);
 
       check({
+        "@reduxjs/toolkit": "Redux Toolkit", redux: "Redux",
+        mobx: "MobX", zustand: "Zustand", jotai: "Jotai",
+        recoil: "Recoil", pinia: "Pinia",
+        xstate: "XState", valtio: "Valtio",
+        nanostores: "Nanostores", effector: "Effector",
+      }, stack.state);
+
+      check({
+        "next-auth": "Auth.js / NextAuth", "@auth/core": "Auth.js / NextAuth",
+        passport: "Passport.js", lucia: "Lucia", "better-auth": "Better Auth",
+        "@clerk/nextjs": "Clerk", "@clerk/clerk-sdk-node": "Clerk",
+        "@auth0/nextjs-auth0": "Auth0", auth0: "Auth0",
+        "@supertokens/supertokens-node": "SuperTokens",
+      }, stack.auth);
+
+      check({
         jest: "Jest", vitest: "Vitest", mocha: "Mocha",
+        jasmine: "Jasmine", "jasmine-core": "Jasmine", karma: "Karma",
         "@testing-library/react": "Testing Library",
         cypress: "Cypress", "@playwright/test": "Playwright",
-        puppeteer: "Puppeteer", ava: "AVA",
+        puppeteer: "Puppeteer", webdriverio: "WebdriverIO", nightwatch: "Nightwatch.js",
+        ava: "AVA", sinon: "Sinon.js", supertest: "Supertest", msw: "MSW",
+        "@storybook/react": "Storybook", "@storybook/vue3": "Storybook",
+        "@storybook/svelte": "Storybook", "@storybook/core": "Storybook",
       }, stack.testing);
 
       check({
         vite: "Vite", webpack: "Webpack", rollup: "Rollup",
         parcel: "Parcel", esbuild: "esbuild", tsup: "tsup",
+        "@babel/core": "Babel", "@swc/core": "SWC",
+        "@biomejs/biome": "Biome", rome: "Rome", "@rspack/core": "Rspack",
+        grunt: "Grunt", gulp: "Gulp",
         turbo: "Turborepo", nx: "Nx",
       }, stack.build);
 
       check({
         tailwindcss: "Tailwind CSS", "@tailwindcss/vite": "Tailwind CSS",
         "styled-components": "Styled Components", "@emotion/react": "Emotion",
-        bootstrap: "Bootstrap", antd: "Ant Design",
-        "@mui/material": "Material UI", "@chakra-ui/react": "Chakra UI",
+        "@vanilla-extract/css": "Vanilla Extract", "@stitches/react": "Stitches",
+        bootstrap: "Bootstrap", "react-bootstrap": "React Bootstrap", bulma: "Bulma",
+        antd: "Ant Design",
+        "@mui/material": "Material UI",
+        "@chakra-ui/react": "Chakra UI",
+        "@mantine/core": "Mantine",
+        "@radix-ui/themes": "Radix Themes",
+        "@headlessui/react": "Headless UI", "@headlessui/vue": "Headless UI",
+        "@nextui-org/react": "HeroUI", "@heroui/react": "HeroUI",
+        vuetify: "Vuetify",
+        primevue: "PrimeVue", primereact: "PrimeReact",
+        "element-plus": "Element Plus",
+        "naive-ui": "Naive UI",
+        flowbite: "Flowbite",
         daisyui: "DaisyUI", unocss: "UnoCSS",
+        "open-props": "Open Props",
       }, stack.styling);
 
       check({
@@ -753,10 +802,21 @@ class ProjectAnalyzer {
         pg: "PostgreSQL", mysql2: "MySQL",
         "better-sqlite3": "SQLite", sqlite3: "SQLite",
         "@prisma/client": "Prisma", "drizzle-orm": "Drizzle ORM",
-        typeorm: "TypeORM", sequelize: "Sequelize",
-        redis: "Redis", ioredis: "Redis (ioredis)",
+        typeorm: "TypeORM", sequelize: "Sequelize", "@mikro-orm/core": "MikroORM",
+        redis: "Redis", ioredis: "Redis (ioredis)", "@upstash/redis": "Upstash Redis",
         "@surrealdb/node": "SurrealDB", surrealdb: "SurrealDB",
         knex: "Knex.js", kysely: "Kysely",
+        "@supabase/supabase-js": "Supabase",
+        firebase: "Firebase", "firebase-admin": "Firebase",
+        "@libsql/client": "LibSQL / Turso",
+        "@neondatabase/serverless": "Neon",
+        "@planetscale/database": "PlanetScale",
+        "neo4j-driver": "Neo4j",
+        "@elastic/elasticsearch": "Elasticsearch",
+        meilisearch: "Meilisearch",
+        convex: "Convex",
+        "@clickhouse/client": "ClickHouse",
+        edgedb: "EdgeDB",
       }, stack.database);
 
       if (allDeps.typescript && !stack.language.includes("TypeScript")) {
@@ -1087,6 +1147,14 @@ class ProjectAnalyzer {
     const extra = [];
     if (this.packageJson?.main) extra.push(this.packageJson.main);
     if (this.packageJson?.module) extra.push(this.packageJson.module);
+    if (this.packageJson?.types) extra.push(this.packageJson.types);
+    if (this.packageJson?.typings) extra.push(this.packageJson.typings);
+    if (this.packageJson?.bin) {
+      const binFiles = typeof this.packageJson.bin === "string"
+        ? [this.packageJson.bin]
+        : Object.values(this.packageJson.bin);
+      extra.push(...binFiles);
+    }
 
     return [...new Set([...extra, ...found])];
   }
@@ -1645,7 +1713,13 @@ class ProjectAnalyzer {
 
     const stackLines = [
       stack?.language?.length && `- **Language**: ${stack.language.join(", ")}`,
+      pkg?.type && `- **Module System**: ${pkg.type === "module" ? "ESM (`type: module`)" : pkg.type === "commonjs" ? "CommonJS" : pkg.type}`,
+      pkg?.engines?.node && `- **Node.js**: ${pkg.engines.node}`,
+      pkg?.engines?.npm && `- **npm**: ${pkg.engines.npm}`,
+      pkg?.engines?.pnpm && `- **pnpm**: ${pkg.engines.pnpm}`,
       stack?.frameworks?.length && `- **Framework**: ${stack.frameworks.join(", ")}`,
+      stack?.state?.length && `- **State Management**: ${stack.state.join(", ")}`,
+      stack?.auth?.length && `- **Auth**: ${stack.auth.join(", ")}`,
       stack?.build?.length && `- **Build Tool**: ${stack.build.join(", ")}`,
       stack?.styling?.length && `- **Styling**: ${stack.styling.join(", ")}`,
       stack?.testing?.length && `- **Testing**: ${stack.testing.join(", ")}`,
@@ -1653,13 +1727,21 @@ class ProjectAnalyzer {
     ].filter(Boolean);
 
     const scripts = pkg?.scripts || {};
-    const importantScripts = [
-      "dev", "start", "build", "test", "lint",
-      "format", "preview", "typecheck", "check",
-    ];
     const commandLines = Object.entries(scripts)
-      .filter(([k]) => importantScripts.includes(k))
       .map(([k, v]) => `- \`npm run ${k}\` — ${v}`);
+
+    const binLines = [];
+    if (pkg?.bin) {
+      if (typeof pkg.bin === "string") {
+        binLines.push(`- \`${pkg.name}\` (binary) — \`${pkg.bin}\``);
+      } else {
+        for (const [name, file] of Object.entries(pkg.bin)) {
+          binLines.push(`- \`${name}\` (binary) — \`${file}\``);
+        }
+      }
+    }
+
+    const allCommandLines = [...binLines, ...commandLines];
 
     const gitSummary = git
       ? `\n## Git\n- **Branch**: ${git.branch}\n- **Last Commit**: ${git.lastCommitMessage}\n- **Author**: ${git.lastCommitAuthor}\n- **Date**: ${git.lastCommitDate}\n${git.remoteUrl ? `- **Remote**: ${git.remoteUrl}` : ""}\n`
@@ -1696,6 +1778,25 @@ class ProjectAnalyzer {
       fileMappingSection = `## File Mapping\n\n${footerLinks}\n`;
     }
 
+    const overviewMeta = [
+      pkg?.version && `**Version**: ${pkg.version}`,
+      pkg?.author && `**Author**: ${typeof pkg.author === "object" ? [pkg.author.name, pkg.author.email && `<${pkg.author.email}>`].filter(Boolean).join(" ") : pkg.author}`,
+      pkg?.license && `**License**: ${pkg.license}`,
+      pkg?.private === true && `**Private**: yes (not published to npm)`,
+      (() => {
+        const url = pkg?.homepage || pkg?.repository?.url;
+        if (!url) return null;
+        const clean = url.replace(/^git\+/, "").replace(/\.git$/, "");
+        return `**Repository**: ${clean}`;
+      })(),
+      pkg?.funding && `**Funding**: ${typeof pkg.funding === "string" ? pkg.funding : pkg.funding?.url || JSON.stringify(pkg.funding)}`,
+    ].filter(Boolean);
+
+    const overviewBody = [
+      pkg?.description || "No description provided.",
+      this.configDescription || null,
+    ].filter(Boolean).join("\n\n");
+
     return `<!-- pka-generated -->
 # ${projectName}
 
@@ -1703,8 +1804,8 @@ class ProjectAnalyzer {
 
 ## Overview
 
-${pkg?.description || "No description provided."}
-${pkg?.version ? `\n**Version**: ${pkg.version}` : ""}
+${overviewBody}
+${overviewMeta.length ? "\n" + overviewMeta.join("\n") : ""}
 
 ## Tech Stack
 
@@ -1712,7 +1813,7 @@ ${stackLines.length ? stackLines.join("\n") : "- Stack not detected (no package.
 
 ## Commands
 
-${commandLines.length ? commandLines.join("\n") : "- No npm scripts detected"}
+${allCommandLines.length ? allCommandLines.join("\n") : "- No commands detected"}
 
 ## Project Structure
 
@@ -2428,8 +2529,20 @@ async function initCommand(args) {
   if (existing !== null) {
     const existingVersion = existing.configVersion || 0;
 
-    // Future migration hook: add new settings introduced after existingVersion
-    // (nothing to migrate yet; existingVersion < CONFIG_VERSION means an older schema)
+    if (existingVersion < CONFIG_VERSION && !opts.force) {
+      // Migrate: preserve all existing settings, add only new fields
+      const migrated = { ...existing, configVersion: CONFIG_VERSION };
+
+      // v1 → v2: added description field
+      if (existingVersion < 2 && !("description" in migrated)) {
+        migrated.description = "";
+      }
+
+      await fs.writeFile(configPath, JSON.stringify(migrated, null, 2) + "\n", "utf8");
+      console.log(`✅ Migrated pka.config.json from v${existingVersion} to v${CONFIG_VERSION}`);
+      console.log(`   New fields added — edit them to customize your settings.`);
+      return;
+    }
 
     if (existingVersion >= CONFIG_VERSION && !opts.force) {
       console.log(`ℹ️  pka.config.json already exists (configVersion: ${existingVersion}). Use --force to regenerate.`);
@@ -2480,6 +2593,8 @@ async function initCommand(args) {
     // ── Extensions / exclusions ───────────────────────────────────────────────
     includeExt: extraExts,
     excludeDir: extraExclusions,
+    // ── Project description (added to Overview in agent files) ───────────────
+    description: "",
     // ── Developer notes (appended verbatim to CLAUDE.md) ─────────────────────
     instructions: "",
   };

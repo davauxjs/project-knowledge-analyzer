@@ -13,6 +13,7 @@ A powerful Node.js command-line tool that analyzes your project structure, flatt
 ## Table of Contents
 
 - [Change Log](#change-log)
+  - [1.0.2](#102)
   - [1.0.1](#101)
   - [1.0.0](#100)
   - [0.9.1](#091)
@@ -80,6 +81,25 @@ A powerful Node.js command-line tool that analyzes your project structure, flatt
 ---
 
 ### Change Log
+
+#### 1.0.2
+
+- **Fix**: All npm scripts now appear in the Commands section — previously only a fixed allowlist (`dev`, `start`, `build`, `test`, `lint`, etc.) was shown; all other scripts were silently omitted
+- **Fix**: Binary entry points listed in `package.json`'s `bin` field no longer appear as orphan/potentially-unused files — they are now correctly recognized as entry points
+- **New**: Binaries from `package.json`'s `bin` field are now listed at the top of the Commands section in all agent files (e.g. `- \`davaux-pka\` (binary) — \`index.js\``)
+- **New**: Additional `package.json` fields surfaced in all agent files:
+  - **Overview**: author, license, private flag, homepage/repository URL, funding
+  - **Tech Stack**: module system (ESM `type: module` / CommonJS), `engines` requirements (Node.js, npm, pnpm)
+- **New**: `description` field in `pka.config.json` — a freeform string for a richer project description, appended as a second paragraph in the Overview section of all agent files. Complements the short description in `package.json`.
+- **New**: Config migration v1 → v2 — running `davaux-pka init` on a v1 `pka.config.json` now non-destructively adds the new `description` field without touching any existing settings. `--force` regenerates from scratch when you want a clean slate.
+- **New**: Greatly expanded tech stack detection — 60+ new entries across all categories; **State Management** and **Auth** added as dedicated Tech Stack lines in all agent files:
+  - **Frameworks**: Alpine.js, HTMX, Lit, Ionic, Socket.io, Hapi.js, tRPC, Feathers.js, Sails.js
+  - **State Management** _(new)_: Redux Toolkit, Redux, MobX, Zustand, Jotai, Recoil, Pinia, XState, Valtio, Nanostores, Effector
+  - **Auth** _(new)_: Auth.js / NextAuth, Passport.js, Lucia, Better Auth, Clerk, Auth0, SuperTokens
+  - **Testing**: Jasmine, Karma, Storybook, MSW, Sinon.js, Supertest, WebdriverIO, Nightwatch.js
+  - **Build**: Babel, SWC, Biome, Rome, Rspack, Grunt, Gulp
+  - **Styling**: Mantine, Radix Themes, Headless UI, Vuetify, PrimeVue, PrimeReact, Element Plus, Naive UI, Flowbite, HeroUI, React Bootstrap, Bulma, Vanilla Extract, Stitches, Open Props
+  - **Database**: Supabase, Firebase, LibSQL / Turso, Neon, PlanetScale, Upstash Redis, Neo4j, Elasticsearch, Meilisearch, Convex, ClickHouse, EdgeDB, MikroORM
 
 #### 1.0.1
 
@@ -184,10 +204,10 @@ Project Knowledge Analyzer solves these problems by:
 ### Smart Analysis
 
 - **Recursive project scanning** with intelligent exclusion patterns
-- **Tech stack detection** — frameworks, build tools, databases, test runners
+- **Tech stack detection** — frameworks, state management, auth, build tools, styling, databases, test runners (150+ packages across 10 categories)
 - **Import graph analysis** — see which files depend on which
 - **Symbol extraction** — exported functions, classes, types per file
-- **Entry point detection** — identifies where execution starts
+- **Entry point detection** — identifies where execution starts; reads `main`, `module`, `bin`, and `types` from `package.json`
 - **Git metadata** — branch, commits, author, recent history
 - **Token count estimate** — know your context budget before uploading
 - **Size limits** to prevent overwhelming uploads
@@ -418,12 +438,13 @@ Every available setting is written to the file — including ones you didn't pas
 
 ```json
 {
-  "configVersion": 1,
+  "configVersion": 2,
   "mode": "flatten",
   "outputDir": "./project-knowledge",
   "maxFileSize": 1048576,
   "includeExt": [".py", ".rb"],
   "excludeDir": ["test", "fixtures"],
+  "description": "Longer project description appended to the Overview section in all agent files.",
   "instructions": "Custom notes embedded in CLAUDE.md as Developer Notes",
 
   "noGit": false,
@@ -457,14 +478,15 @@ Every available setting is written to the file — including ones you didn't pas
 
 | Field | Notes |
 | --- | --- |
-| `configVersion` | Written by `init`; used to detect when a config is older than the current release and may need migration. Do not remove it. |
+| `configVersion` | Written by `init`; used to detect when a config is older than the current release and needs migration. Do not remove it. |
+| `description` | A richer project description appended as a second paragraph in the Overview section of all agent files. Use this for context that goes beyond the one-liner in `package.json`. |
 | `agentsMd` / `copilot` / `cursorRules` | `null` = follow mode default (on in `multi-tool`/`full`, off in `claude-code`). Set `false` to always exclude; `true` to always include regardless of mode. |
 | `compactTokens` | `0` means not set — compact mode uses the default 8,192 token budget when `compact: true`. Set a number to override. |
 | `instructions` | Inline developer notes appended to `CLAUDE.md` as a `## Developer Notes` section. `PKA_INSTRUCTIONS.md` at the project root takes precedence over this field. |
 
 **Config versioning and migration:**
 
-`davaux-pka init` stamps a `configVersion` into every generated config. When a new version of pka introduces new settings, running `init` on a project that already has a config will detect the older `configVersion` and add the new settings with their defaults — your existing values are preserved. If the config is already at the current version, `init` is a no-op (use `--force` to regenerate from scratch).
+`davaux-pka init` stamps a `configVersion` into every generated config. When a newer version of pka introduces new settings, running `init` on an older config detects the version mismatch and non-destructively adds the new fields at their defaults — your existing values and any custom keys are preserved. If the config is already at the current version, `init` is a no-op (use `--force` to regenerate from scratch).
 
 Set an agent file to `false` to exclude it from `multi-tool`/`full` mode even when those modes are active:
 
@@ -786,6 +808,14 @@ All API responses must go through the `ApiResponse` wrapper type.
 
 The content appears as a `## Developer Notes` section near the top of `CLAUDE.md`, in the core section that is never dropped by compact mode.
 
+**For a richer project description**, use the `description` field in `pka.config.json`. Unlike `instructions` (which is for coding guidance), `description` is appended as a second paragraph in the **Overview** section — ideal for context that goes beyond the one-liner in `package.json`:
+
+```json
+{
+  "description": "Multi-tenant SaaS platform. The `apps/web` workspace is Next.js; `apps/api` is a Fastify server. Auth is handled by the shared `packages/auth` library using JWT + refresh tokens stored in Redis."
+}
+```
+
 <sup>[↑ Back to ToC](#table-of-contents)</sup>
 
 ## 🔍 Orphan File Detection
@@ -801,7 +831,7 @@ These JS/TS files are not imported by anything and are not recognized entry poin
 - `src/helpers/old-auth.ts`
 ```
 
-This surfaces in `CLAUDE.md` automatically whenever orphans are found — no flag needed. TypeScript ESM imports written with `.js` extensions (e.g. `import { Foo } from "./Foo.js"` that resolve to `Foo.ts`) are correctly resolved and do not generate false positives.
+This surfaces in `CLAUDE.md` automatically whenever orphans are found — no flag needed. TypeScript ESM imports written with `.js` extensions (e.g. `import { Foo } from "./Foo.js"` that resolve to `Foo.ts`) are correctly resolved and do not generate false positives. Files referenced in `package.json`'s `bin`, `main`, `module`, `types`, and `typings` fields are also treated as known entry points and excluded from this list.
 
 <sup>[↑ Back to ToC](#table-of-contents)</sup>
 
@@ -921,9 +951,9 @@ Generates `CODEBASE.xml` alongside the usual output files.
 
 The generated `CLAUDE.md` includes everything an AI agent needs to understand your project at a glance:
 
-- **Project overview** — name, version, description
-- **Tech stack** — auto-detected language, framework, build tool, styling, testing, database
-- **Commands** — key npm scripts (dev, build, test, lint, etc.)
+- **Project overview** — name, version, description, author, license, repository/homepage, and the optional `description` from `pka.config.json`
+- **Tech stack** — auto-detected language, framework, state management, auth, build tool, styling, testing, database; module system (ESM/CommonJS); `engines` requirements
+- **Commands** — all npm scripts, plus any `bin` entries from `package.json`
 - **Project structure** — ASCII directory tree
 - **Entry points** — where execution starts
 - **Files by type** — grouped list of all analyzed files
@@ -943,16 +973,18 @@ The generated `CLAUDE.md` includes everything an AI agent needs to understand yo
 
 ## 🔍 Detected Stack Coverage
 
-| Category           | Detected Packages                                                                                           |
-| ------------------ | ----------------------------------------------------------------------------------------------------------- |
-| **Frameworks**     | React, Vue, Angular, Svelte, SvelteKit, Next.js, Nuxt, Gatsby, Remix, Astro, SolidJS, Preact, Qwik          |
-| **Backend**        | Express, Fastify, NestJS, Koa, Hono, Elysia                                                                 |
-| **Mobile/Desktop** | React Native, Expo, Electron, Tauri                                                                         |
-| **Build Tools**    | Vite, Webpack, Rollup, Parcel, esbuild, tsup, Turborepo, Nx                                                 |
-| **Styling**        | Tailwind CSS, Styled Components, Emotion, Material UI, Chakra UI, Ant Design, DaisyUI, UnoCSS               |
-| **Testing**        | Jest, Vitest, Mocha, Testing Library, Cypress, Playwright, Puppeteer, AVA                                   |
-| **Databases**      | PostgreSQL, MySQL, SQLite, MongoDB, Redis, Prisma, Drizzle ORM, TypeORM, Sequelize, SurrealDB, Knex, Kysely |
-| **Languages**      | TypeScript, Python, Go, Rust, Ruby, Java, PHP, Swift, Kotlin, Dart, Lua                                     |
+| Category               | Detected Packages                                                                                                                                                                         |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **UI Frameworks**      | React, Vue, Angular, Svelte, SvelteKit, Next.js, Nuxt, Gatsby, Remix, Astro, SolidJS, Preact, Qwik, Alpine.js, HTMX, Lit, Ionic                                                          |
+| **Backend Frameworks** | Express, Fastify, NestJS, Koa, Hono, Elysia, Hapi.js, Feathers.js, Sails.js, tRPC, Socket.io                                                                                            |
+| **Mobile/Desktop**     | React Native, Expo, Electron, Tauri                                                                                                                                                       |
+| **State Management**   | Redux Toolkit, Redux, MobX, Zustand, Jotai, Recoil, Pinia, XState, Valtio, Nanostores, Effector                                                                                          |
+| **Auth**               | Auth.js / NextAuth, Passport.js, Lucia, Better Auth, Clerk, Auth0, SuperTokens                                                                                                           |
+| **Build Tools**        | Vite, Webpack, Rollup, Parcel, esbuild, tsup, Babel, SWC, Biome, Rome, Rspack, Grunt, Gulp, Turborepo, Nx                                                                                |
+| **Styling**            | Tailwind CSS, Styled Components, Emotion, Vanilla Extract, Stitches, Bootstrap, React Bootstrap, Bulma, Material UI, Chakra UI, Mantine, Radix Themes, Headless UI, HeroUI, Ant Design, Vuetify, PrimeVue, PrimeReact, Element Plus, Naive UI, Flowbite, DaisyUI, UnoCSS, Open Props |
+| **Testing**            | Jest, Vitest, Mocha, Jasmine, Karma, Testing Library, Cypress, Playwright, Puppeteer, WebdriverIO, Nightwatch.js, AVA, Sinon.js, Supertest, MSW, Storybook                                |
+| **Databases / ORMs**   | PostgreSQL, MySQL, SQLite, MongoDB, Redis, Upstash Redis, Prisma, Drizzle ORM, TypeORM, Sequelize, MikroORM, SurrealDB, Knex, Kysely, Supabase, Firebase, LibSQL / Turso, Neon, PlanetScale, Neo4j, Elasticsearch, Meilisearch, Convex, ClickHouse, EdgeDB |
+| **Languages**          | TypeScript, Python, Go, Rust, Ruby, Java, PHP, Swift, Kotlin, Dart, Lua                                                                                                                  |
 
 <sup>[↑ Back to ToC](#table-of-contents)</sup>
 
