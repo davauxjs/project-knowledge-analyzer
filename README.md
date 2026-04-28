@@ -12,12 +12,7 @@ A powerful Node.js command-line tool that analyzes your project structure, flatt
 
 ## Table of Contents
 
-- [Change Log](#change-log)
-  - [1.0.2](#102)
-  - [1.0.1](#101)
-  - [1.0.0](#100)
-  - [0.9.1](#091)
-  - [0.9.0](#090)
+- [Recent Changes](#recent-changes)
 - [Why Use This Tool?](#-why-use-this-tool)
   - [The Problem](#the-problem)
   - [The Solution](#the-solution)
@@ -77,97 +72,20 @@ A powerful Node.js command-line tool that analyzes your project structure, flatt
   - [Development Setup](#development-setup)
 - [License](#-license)
 - [Links](#-links)
+- [Change Log](#change-log)
+  - [1.0.2](#102)
+  - [1.0.1](#101)
+  - [1.0.0](#100)
+  - [0.9.1](#091)
+  - [0.9.0](#090)
 
 ---
 
-### Change Log
+### Recent Changes
 
-#### 1.0.2
+See Change Log - Latest release: [1.0.2](#102)
 
-- **Fix**: All npm scripts now appear in the Commands section — previously only a fixed allowlist (`dev`, `start`, `build`, `test`, `lint`, etc.) was shown; all other scripts were silently omitted
-- **Fix**: Binary entry points listed in `package.json`'s `bin` field no longer appear as orphan/potentially-unused files — they are now correctly recognized as entry points
-- **New**: Binaries from `package.json`'s `bin` field are now listed at the top of the Commands section in all agent files (e.g. `- \`davaux-pka\` (binary) — \`index.js\``)
-- **New**: Additional `package.json` fields surfaced in all agent files:
-  - **Overview**: author, license, private flag, homepage/repository URL, funding
-  - **Tech Stack**: module system (ESM `type: module` / CommonJS), `engines` requirements (Node.js, npm, pnpm)
-- **New**: `description` field in `pka.config.json` — a freeform string for a richer project description, appended as a second paragraph in the Overview section of all agent files. Complements the short description in `package.json`.
-- **New**: Config migration v1 → v2 — running `davaux-pka init` on a v1 `pka.config.json` now non-destructively adds the new `description` field without touching any existing settings. `--force` regenerates from scratch when you want a clean slate.
-- **New**: Greatly expanded tech stack detection — 60+ new entries across all categories; **State Management** and **Auth** added as dedicated Tech Stack lines in all agent files:
-  - **Frameworks**: Alpine.js, HTMX, Lit, Ionic, Socket.io, Hapi.js, tRPC, Feathers.js, Sails.js
-  - **State Management** _(new)_: Redux Toolkit, Redux, MobX, Zustand, Jotai, Recoil, Pinia, XState, Valtio, Nanostores, Effector
-  - **Auth** _(new)_: Auth.js / NextAuth, Passport.js, Lucia, Better Auth, Clerk, Auth0, SuperTokens
-  - **Testing**: Jasmine, Karma, Storybook, MSW, Sinon.js, Supertest, WebdriverIO, Nightwatch.js
-  - **Build**: Babel, SWC, Biome, Rome, Rspack, Grunt, Gulp
-  - **Styling**: Mantine, Radix Themes, Headless UI, Vuetify, PrimeVue, PrimeReact, Element Plus, Naive UI, Flowbite, HeroUI, React Bootstrap, Bulma, Vanilla Extract, Stitches, Open Props
-  - **Database**: Supabase, Firebase, LibSQL / Turso, Neon, PlanetScale, Upstash Redis, Neo4j, Elasticsearch, Meilisearch, Convex, ClickHouse, EdgeDB, MikroORM
-
-#### 1.0.1
-
-- **New**: `init` command — generates a `pka.config.json` in the target directory with every available setting pre-filled at its runtime default. Pass any analysis flag to have it reflected in the generated file (e.g. `davaux-pka init --mode claude-code --compact`). If a config already exists at the current `configVersion`, the command is a no-op unless `--force` is also passed.
-- **New**: Config versioning — generated `pka.config.json` files now include a `configVersion` field. Future releases use this to detect and migrate older configs, adding new settings without touching existing customizations.
-
-#### 1.0.0
-
-- **New**: Mode system — every run starts with `--mode` to define what gets generated; options apply only when relevant to the selected mode. See [Modes](#modes)
-  - `flatten` (default) — flattened files + `CODEBASE.txt` + `PROJECT_MAP.md` + `CLAUDE.md` in `outputDir`
-  - `claude-code` — `CLAUDE.md` at the project root only (alias: `--cc`)
-  - `multi-tool` — all four agent files at the project root (`CLAUDE.md` + `AGENTS.md` + copilot-instructions + `.cursorrules`); set any to `false` in `pka.config.json` to exclude it
-  - `full` — flatten output in `outputDir` plus all four agent files at the project root
-- **New**: `--agents-md` — adds `AGENTS.md` for OpenAI Codex, Devin, and agent runtimes that read this file by convention (on by default in `multi-tool`/`full` mode)
-- **New**: `--copilot` — adds `.github/copilot-instructions.md` for GitHub Copilot (on by default in `multi-tool`/`full` mode)
-- **New**: `--cursor-rules` — adds `.cursorrules` for Cursor IDE (on by default in `multi-tool`/`full` mode)
-- **New**: Automatic stale file cleanup — after each run, pka removes its own generated files that are no longer applicable to the current mode (identified by the `<!-- pka-generated -->` marker or `_pkaGenerated` field); manually authored files are never touched
-- **New**: Configuration conflict warnings — detects and reports contradictory options (e.g. `--compact-omit` without compact mode, `--since` with `--no-git`) with a suggested resolution before the run starts
-- **New**: `--force` flag — allows overwriting non-pka-generated context files when using `--install` or any agent mode
-- **New**: `.claude/` directory scanning — reads `.claude/settings.json` and `.claude/commands/` to document MCP servers, permissions, hooks, env keys, and custom slash commands in `CLAUDE.md`
-- **New**: Install guard — generated context files are marked `<!-- pka-generated -->` so re-runs safely overwrite pka output without stomping manually authored files
-- **New**: Compact mode (`--compact`, `--compact-tokens <n>`) — splits `CLAUDE.md` into token-budget-aware chunks for local/token-limited models (Ollama, etc.)
-- **New**: Compact omit mode (`--compact-omit`) — single-file alternative that drops lowest-priority sections to fit the budget instead of chunking
-- **New**: `--compact-keep <sections>` — pin specific sections so they are never dropped in omit mode
-- **New**: `--compact-preview` — dry-run that prints a table of section sizes and omit/chunk plan without writing files
-- **New**: `--xml` flag — generates `CODEBASE.xml` in Anthropic `<documents>` format for models that prefer structured XML context
-- **New**: `--hierarchical` flag — generates a `CLAUDE.md` in each subdirectory, automatically describing the files and imports local to that directory
-- **New**: `--scaffold-commands` flag — scaffolds `.claude/commands/*.md` stubs from detected npm scripts for use as Claude Code slash commands
-- **New**: `--watch` flag — re-runs analysis automatically whenever source files change (500ms debounce)
-- **New**: `--since <git-ref>` flag — highlights files changed since a branch, tag, or commit SHA in `CLAUDE.md`
-- **New**: Context budget warning — alerts when `CLAUDE.md` exceeds 80k tokens (info) or 150k tokens (warning), with a suggestion to use `--compact`
-- **New**: Orphan/dead file detection — identifies JS/TS files that nothing imports and are not entry points
-- **New**: Custom developer notes — embed a persistent `## Developer Notes` section in `CLAUDE.md` via `PKA_INSTRUCTIONS.md` or the `instructions` field in `pka.config.json`
-- **New**: `CODEBASE.txt` — entire codebase concatenated into one uploadable file (upload 1 file instead of 50+)
-- **New**: `.gitignore` parsing — automatically excludes gitignored files from output
-- **New**: `pka.config.json` — persist CLI options at the project root so bare `npx davaux-pka` just works
-- **New**: `--install` flag — in `flatten` mode, copies `CLAUDE.md` from `outputDir` to the project root
-- **New**: `.gitignore` auto-update — `outputDir` is automatically added to `.gitignore` on every `flatten`/`full` run; opt out with `--no-gitignore` or `noGitignore: true` in config
-- **New**: `--diff` mode — shows what changed (new, modified, deleted files) since the last run
-- **New**: Circular dependency detection — warns when JS/TS imports form a cycle
-- **New**: TODO/FIXME/HACK/NOTE/BUG/OPTIMIZE annotation extraction with file and line numbers
-- **New**: Environment variable documentation — parses `.env.example` into a structured required/optional table
-- **New**: Monorepo/workspace detection — npm, yarn, pnpm, Lerna, Turborepo, Nx
-- **New**: Binary file detection — skips binary files that would corrupt output
-- **New**: Parallel file reading with concurrency limit — significantly faster on large projects
-- **New**: Tech stack detection — auto-identifies React, Vue, Next.js, TypeScript, Vite, Tailwind, Prisma, SurrealDB, Playwright, and 40+ other packages
-- **New**: Git metadata collection — branch, last commit, author, recent history
-- **New**: Import graph analysis — maps which JS/TS files import which others
-- **New**: Symbol extraction — exported functions, classes, types, and constants per file
-- **New**: Entry point detection — identifies `index`, `main`, `app`, `server` files and `package.json` main/module fields
-- **New**: Token count estimate in `PROJECT_MAP.md`
-- **New**: Expanded language support — Python, Go, Rust, Ruby, Java, PHP, Swift, Kotlin, Dart, Lua, GraphQL, Prisma, Terraform, shell scripts, TOML, INI, JSONC, MDX
-- **Fix**: TypeScript ESM imports (`.js` extension resolving to `.ts` files) are now correctly resolved in the import graph and orphan file detection
-- **Fix**: Output directory is now automatically excluded from file scanning on every run, preventing feedback loops when re-running in the same project
-- **Fix**: CLI defaults to the current directory when no path argument is given — `davaux-pka --cc` works without an explicit `.`
-- **Fix**: File headers now use correct comment syntax per file type
-- **Fix**: Path separators are now consistent across all platforms (Windows compatibility)
-- **Improved**: `project-index.json` includes stack, git, import graph, per-file symbol data, content hashes, and diff summary
-- **Improved**: `PROJECT_MAP.md` includes git history, entry points, import graph, symbols, circular deps, annotations, env vars, and workspace info
-- **Updated**: License changed from MIT to GPLv3 to ensure that improvements to this tool remain open source and freely available to the community, while still allowing commercial use and modification under the terms of the GPL.
-
-#### 0.9.1
-
-- **Added**: `.sql` and `.surql` to allowed file types
-
-#### 0.9.0
-
-- Initial release
+To reduce release frequency, feature updates will sometimes be released with an @next tag, ahead of the @latest stable version. Bug fixes will generally be released immediately under the @latest stable version.
 
 <sup>[↑ Back to ToC](#table-of-contents)</sup>
 
@@ -476,13 +394,13 @@ Every available setting is written to the file — including ones you didn't pas
 
 **Key field notes:**
 
-| Field | Notes |
-| --- | --- |
-| `configVersion` | Written by `init`; used to detect when a config is older than the current release and needs migration. Do not remove it. |
-| `description` | A richer project description appended as a second paragraph in the Overview section of all agent files. Use this for context that goes beyond the one-liner in `package.json`. |
-| `agentsMd` / `copilot` / `cursorRules` | `null` = follow mode default (on in `multi-tool`/`full`, off in `claude-code`). Set `false` to always exclude; `true` to always include regardless of mode. |
-| `compactTokens` | `0` means not set — compact mode uses the default 8,192 token budget when `compact: true`. Set a number to override. |
-| `instructions` | Inline developer notes appended to `CLAUDE.md` as a `## Developer Notes` section. `PKA_INSTRUCTIONS.md` at the project root takes precedence over this field. |
+| Field                                  | Notes                                                                                                                                                                          |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `configVersion`                        | Written by `init`; used to detect when a config is older than the current release and needs migration. Do not remove it.                                                       |
+| `description`                          | A richer project description appended as a second paragraph in the Overview section of all agent files. Use this for context that goes beyond the one-liner in `package.json`. |
+| `agentsMd` / `copilot` / `cursorRules` | `null` = follow mode default (on in `multi-tool`/`full`, off in `claude-code`). Set `false` to always exclude; `true` to always include regardless of mode.                    |
+| `compactTokens`                        | `0` means not set — compact mode uses the default 8,192 token budget when `compact: true`. Set a number to override.                                                           |
+| `instructions`                         | Inline developer notes appended to `CLAUDE.md` as a `## Developer Notes` section. `PKA_INSTRUCTIONS.md` at the project root takes precedence over this field.                  |
 
 **Config versioning and migration:**
 
@@ -973,18 +891,18 @@ The generated `CLAUDE.md` includes everything an AI agent needs to understand yo
 
 ## 🔍 Detected Stack Coverage
 
-| Category               | Detected Packages                                                                                                                                                                         |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **UI Frameworks**      | React, Vue, Angular, Svelte, SvelteKit, Next.js, Nuxt, Gatsby, Remix, Astro, SolidJS, Preact, Qwik, Alpine.js, HTMX, Lit, Ionic                                                          |
-| **Backend Frameworks** | Express, Fastify, NestJS, Koa, Hono, Elysia, Hapi.js, Feathers.js, Sails.js, tRPC, Socket.io                                                                                            |
-| **Mobile/Desktop**     | React Native, Expo, Electron, Tauri                                                                                                                                                       |
-| **State Management**   | Redux Toolkit, Redux, MobX, Zustand, Jotai, Recoil, Pinia, XState, Valtio, Nanostores, Effector                                                                                          |
-| **Auth**               | Auth.js / NextAuth, Passport.js, Lucia, Better Auth, Clerk, Auth0, SuperTokens                                                                                                           |
-| **Build Tools**        | Vite, Webpack, Rollup, Parcel, esbuild, tsup, Babel, SWC, Biome, Rome, Rspack, Grunt, Gulp, Turborepo, Nx                                                                                |
+| Category               | Detected Packages                                                                                                                                                                                                                                                                    |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **UI Frameworks**      | React, Vue, Angular, Svelte, SvelteKit, Next.js, Nuxt, Gatsby, Remix, Astro, SolidJS, Preact, Qwik, Alpine.js, HTMX, Lit, Ionic                                                                                                                                                      |
+| **Backend Frameworks** | Express, Fastify, NestJS, Koa, Hono, Elysia, Hapi.js, Feathers.js, Sails.js, tRPC, Socket.io                                                                                                                                                                                         |
+| **Mobile/Desktop**     | React Native, Expo, Electron, Tauri                                                                                                                                                                                                                                                  |
+| **State Management**   | Redux Toolkit, Redux, MobX, Zustand, Jotai, Recoil, Pinia, XState, Valtio, Nanostores, Effector                                                                                                                                                                                      |
+| **Auth**               | Auth.js / NextAuth, Passport.js, Lucia, Better Auth, Clerk, Auth0, SuperTokens                                                                                                                                                                                                       |
+| **Build Tools**        | Vite, Webpack, Rollup, Parcel, esbuild, tsup, Babel, SWC, Biome, Rome, Rspack, Grunt, Gulp, Turborepo, Nx                                                                                                                                                                            |
 | **Styling**            | Tailwind CSS, Styled Components, Emotion, Vanilla Extract, Stitches, Bootstrap, React Bootstrap, Bulma, Material UI, Chakra UI, Mantine, Radix Themes, Headless UI, HeroUI, Ant Design, Vuetify, PrimeVue, PrimeReact, Element Plus, Naive UI, Flowbite, DaisyUI, UnoCSS, Open Props |
-| **Testing**            | Jest, Vitest, Mocha, Jasmine, Karma, Testing Library, Cypress, Playwright, Puppeteer, WebdriverIO, Nightwatch.js, AVA, Sinon.js, Supertest, MSW, Storybook                                |
-| **Databases / ORMs**   | PostgreSQL, MySQL, SQLite, MongoDB, Redis, Upstash Redis, Prisma, Drizzle ORM, TypeORM, Sequelize, MikroORM, SurrealDB, Knex, Kysely, Supabase, Firebase, LibSQL / Turso, Neon, PlanetScale, Neo4j, Elasticsearch, Meilisearch, Convex, ClickHouse, EdgeDB |
-| **Languages**          | TypeScript, Python, Go, Rust, Ruby, Java, PHP, Swift, Kotlin, Dart, Lua                                                                                                                  |
+| **Testing**            | Jest, Vitest, Mocha, Jasmine, Karma, Testing Library, Cypress, Playwright, Puppeteer, WebdriverIO, Nightwatch.js, AVA, Sinon.js, Supertest, MSW, Storybook                                                                                                                           |
+| **Databases / ORMs**   | PostgreSQL, MySQL, SQLite, MongoDB, Redis, Upstash Redis, Prisma, Drizzle ORM, TypeORM, Sequelize, MikroORM, SurrealDB, Knex, Kysely, Supabase, Firebase, LibSQL / Turso, Neon, PlanetScale, Neo4j, Elasticsearch, Meilisearch, Convex, ClickHouse, EdgeDB                           |
+| **Languages**          | TypeScript, Python, Go, Rust, Ruby, Java, PHP, Swift, Kotlin, Dart, Lua                                                                                                                                                                                                              |
 
 <sup>[↑ Back to ToC](#table-of-contents)</sup>
 
@@ -1087,6 +1005,107 @@ GPLv3 License — see the [LICENSE](LICENSE) file for details.
 - [npm Package](https://www.npmjs.com/package/@davaux/pka)
 - [Report Issues](https://github.com/davauxjs/project-knowledge-analyzer/issues)
 - [Feature Requests](https://github.com/davauxjs/project-knowledge-analyzer/discussions)
+
+<sup>[↑ Back to ToC](#table-of-contents)</sup>
+
+---
+
+### Change Log
+
+#### 1.0.2
+
+- **Fix**: All npm scripts now appear in the Commands section — previously only a fixed allowlist (`dev`, `start`, `build`, `test`, `lint`, etc.) was shown; all other scripts were silently omitted
+- **Fix**: Binary entry points listed in `package.json`'s `bin` field no longer appear as orphan/potentially-unused files — they are now correctly recognized as entry points
+- **New**: Binaries from `package.json`'s `bin` field are now listed at the top of the Commands section in all agent files (e.g. `- \`davaux-pka\` (binary) — \`index.js\``)
+- **New**: Additional `package.json` fields surfaced in all agent files:
+  - **Overview**: author, license, private flag, homepage/repository URL, funding
+  - **Tech Stack**: module system (ESM `type: module` / CommonJS), `engines` requirements (Node.js, npm, pnpm)
+- **New**: `description` field in `pka.config.json` — a freeform string for a richer project description, appended as a second paragraph in the Overview section of all agent files. Complements the short description in `package.json`.
+- **New**: Config migration v1 → v2 — running `davaux-pka init` on a v1 `pka.config.json` now non-destructively adds the new `description` field without touching any existing settings. `--force` regenerates from scratch when you want a clean slate.
+- **New**: Greatly expanded tech stack detection — 60+ new entries across all categories; **State Management** and **Auth** added as dedicated Tech Stack lines in all agent files:
+  - **Frameworks**: Alpine.js, HTMX, Lit, Ionic, Socket.io, Hapi.js, tRPC, Feathers.js, Sails.js
+  - **State Management** _(new)_: Redux Toolkit, Redux, MobX, Zustand, Jotai, Recoil, Pinia, XState, Valtio, Nanostores, Effector
+  - **Auth** _(new)_: Auth.js / NextAuth, Passport.js, Lucia, Better Auth, Clerk, Auth0, SuperTokens
+  - **Testing**: Jasmine, Karma, Storybook, MSW, Sinon.js, Supertest, WebdriverIO, Nightwatch.js
+  - **Build**: Babel, SWC, Biome, Rome, Rspack, Grunt, Gulp
+  - **Styling**: Mantine, Radix Themes, Headless UI, Vuetify, PrimeVue, PrimeReact, Element Plus, Naive UI, Flowbite, HeroUI, React Bootstrap, Bulma, Vanilla Extract, Stitches, Open Props
+  - **Database**: Supabase, Firebase, LibSQL / Turso, Neon, PlanetScale, Upstash Redis, Neo4j, Elasticsearch, Meilisearch, Convex, ClickHouse, EdgeDB, MikroORM
+
+  <sup>[↑ Back to ToC](#table-of-contents)</sup>
+
+#### 1.0.1
+
+- **New**: `init` command — generates a `pka.config.json` in the target directory with every available setting pre-filled at its runtime default. Pass any analysis flag to have it reflected in the generated file (e.g. `davaux-pka init --mode claude-code --compact`). If a config already exists at the current `configVersion`, the command is a no-op unless `--force` is also passed.
+- **New**: Config versioning — generated `pka.config.json` files now include a `configVersion` field. Future releases use this to detect and migrate older configs, adding new settings without touching existing customizations.
+
+<sup>[↑ Back to ToC](#table-of-contents)</sup>
+
+#### 1.0.0
+
+- **New**: Mode system — every run starts with `--mode` to define what gets generated; options apply only when relevant to the selected mode. See [Modes](#modes)
+  - `flatten` (default) — flattened files + `CODEBASE.txt` + `PROJECT_MAP.md` + `CLAUDE.md` in `outputDir`
+  - `claude-code` — `CLAUDE.md` at the project root only (alias: `--cc`)
+  - `multi-tool` — all four agent files at the project root (`CLAUDE.md` + `AGENTS.md` + copilot-instructions + `.cursorrules`); set any to `false` in `pka.config.json` to exclude it
+  - `full` — flatten output in `outputDir` plus all four agent files at the project root
+- **New**: `--agents-md` — adds `AGENTS.md` for OpenAI Codex, Devin, and agent runtimes that read this file by convention (on by default in `multi-tool`/`full` mode)
+- **New**: `--copilot` — adds `.github/copilot-instructions.md` for GitHub Copilot (on by default in `multi-tool`/`full` mode)
+- **New**: `--cursor-rules` — adds `.cursorrules` for Cursor IDE (on by default in `multi-tool`/`full` mode)
+- **New**: Automatic stale file cleanup — after each run, pka removes its own generated files that are no longer applicable to the current mode (identified by the `<!-- pka-generated -->` marker or `_pkaGenerated` field); manually authored files are never touched
+- **New**: Configuration conflict warnings — detects and reports contradictory options (e.g. `--compact-omit` without compact mode, `--since` with `--no-git`) with a suggested resolution before the run starts
+- **New**: `--force` flag — allows overwriting non-pka-generated context files when using `--install` or any agent mode
+- **New**: `.claude/` directory scanning — reads `.claude/settings.json` and `.claude/commands/` to document MCP servers, permissions, hooks, env keys, and custom slash commands in `CLAUDE.md`
+- **New**: Install guard — generated context files are marked `<!-- pka-generated -->` so re-runs safely overwrite pka output without stomping manually authored files
+- **New**: Compact mode (`--compact`, `--compact-tokens <n>`) — splits `CLAUDE.md` into token-budget-aware chunks for local/token-limited models (Ollama, etc.)
+- **New**: Compact omit mode (`--compact-omit`) — single-file alternative that drops lowest-priority sections to fit the budget instead of chunking
+- **New**: `--compact-keep <sections>` — pin specific sections so they are never dropped in omit mode
+- **New**: `--compact-preview` — dry-run that prints a table of section sizes and omit/chunk plan without writing files
+- **New**: `--xml` flag — generates `CODEBASE.xml` in Anthropic `<documents>` format for models that prefer structured XML context
+- **New**: `--hierarchical` flag — generates a `CLAUDE.md` in each subdirectory, automatically describing the files and imports local to that directory
+- **New**: `--scaffold-commands` flag — scaffolds `.claude/commands/*.md` stubs from detected npm scripts for use as Claude Code slash commands
+- **New**: `--watch` flag — re-runs analysis automatically whenever source files change (500ms debounce)
+- **New**: `--since <git-ref>` flag — highlights files changed since a branch, tag, or commit SHA in `CLAUDE.md`
+- **New**: Context budget warning — alerts when `CLAUDE.md` exceeds 80k tokens (info) or 150k tokens (warning), with a suggestion to use `--compact`
+- **New**: Orphan/dead file detection — identifies JS/TS files that nothing imports and are not entry points
+- **New**: Custom developer notes — embed a persistent `## Developer Notes` section in `CLAUDE.md` via `PKA_INSTRUCTIONS.md` or the `instructions` field in `pka.config.json`
+- **New**: `CODEBASE.txt` — entire codebase concatenated into one uploadable file (upload 1 file instead of 50+)
+- **New**: `.gitignore` parsing — automatically excludes gitignored files from output
+- **New**: `pka.config.json` — persist CLI options at the project root so bare `npx davaux-pka` just works
+- **New**: `--install` flag — in `flatten` mode, copies `CLAUDE.md` from `outputDir` to the project root
+- **New**: `.gitignore` auto-update — `outputDir` is automatically added to `.gitignore` on every `flatten`/`full` run; opt out with `--no-gitignore` or `noGitignore: true` in config
+- **New**: `--diff` mode — shows what changed (new, modified, deleted files) since the last run
+- **New**: Circular dependency detection — warns when JS/TS imports form a cycle
+- **New**: TODO/FIXME/HACK/NOTE/BUG/OPTIMIZE annotation extraction with file and line numbers
+- **New**: Environment variable documentation — parses `.env.example` into a structured required/optional table
+- **New**: Monorepo/workspace detection — npm, yarn, pnpm, Lerna, Turborepo, Nx
+- **New**: Binary file detection — skips binary files that would corrupt output
+- **New**: Parallel file reading with concurrency limit — significantly faster on large projects
+- **New**: Tech stack detection — auto-identifies React, Vue, Next.js, TypeScript, Vite, Tailwind, Prisma, SurrealDB, Playwright, and 40+ other packages
+- **New**: Git metadata collection — branch, last commit, author, recent history
+- **New**: Import graph analysis — maps which JS/TS files import which others
+- **New**: Symbol extraction — exported functions, classes, types, and constants per file
+- **New**: Entry point detection — identifies `index`, `main`, `app`, `server` files and `package.json` main/module fields
+- **New**: Token count estimate in `PROJECT_MAP.md`
+- **New**: Expanded language support — Python, Go, Rust, Ruby, Java, PHP, Swift, Kotlin, Dart, Lua, GraphQL, Prisma, Terraform, shell scripts, TOML, INI, JSONC, MDX
+- **Fix**: TypeScript ESM imports (`.js` extension resolving to `.ts` files) are now correctly resolved in the import graph and orphan file detection
+- **Fix**: Output directory is now automatically excluded from file scanning on every run, preventing feedback loops when re-running in the same project
+- **Fix**: CLI defaults to the current directory when no path argument is given — `davaux-pka --cc` works without an explicit `.`
+- **Fix**: File headers now use correct comment syntax per file type
+- **Fix**: Path separators are now consistent across all platforms (Windows compatibility)
+- **Improved**: `project-index.json` includes stack, git, import graph, per-file symbol data, content hashes, and diff summary
+- **Improved**: `PROJECT_MAP.md` includes git history, entry points, import graph, symbols, circular deps, annotations, env vars, and workspace info
+- **Updated**: License changed from MIT to GPLv3 to ensure that improvements to this tool remain open source and freely available to the community, while still allowing commercial use and modification under the terms of the GPL.
+
+<sup>[↑ Back to ToC](#table-of-contents)</sup>
+
+#### 0.9.1
+
+- **Added**: `.sql` and `.surql` to allowed file types
+
+<sup>[↑ Back to ToC](#table-of-contents)</sup>
+
+#### 0.9.0
+
+- Initial release
 
 <sup>[↑ Back to ToC](#table-of-contents)</sup>
 
